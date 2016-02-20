@@ -4,7 +4,7 @@ import sys
 import logging
 import argparse
 from git import Repo
-from git.exc import InvalidGitRepositoryError
+from git.exc import InvalidGitRepositoryError, GitCommandError
 
 
 def create_argument_parser(logger):
@@ -47,6 +47,10 @@ def update_repository(path, branch, logger):
             logger.warn("\"%s\" is a bare git repository, skipping", path)
             return False
 
+        if repository.is_dirty():
+            logger.warn("\"%s\" has unsaved changes, skipping", path)
+            return False
+
         branches = repository.branches
         for b in branches:
             if b.name == branch:
@@ -60,6 +64,9 @@ def update_repository(path, branch, logger):
                 return False
     except InvalidGitRepositoryError:
         logger.warn("\"%s\" is not a valid git repository, skipping", path)
+        return False
+    except GitCommandError:
+        logger.exception("Failed to update \"%s\"", path)
         return False
 
 
